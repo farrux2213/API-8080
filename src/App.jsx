@@ -1,4 +1,5 @@
 import "./App.css";
+import { useEffect, useState } from "react";
 import {
   Card,
   Button,
@@ -10,7 +11,7 @@ import {
   Skeleton,
   Switch,
   Spin,
-  Space,
+  Carousel,
 } from "antd";
 import TextArea from "antd/lib/input/TextArea";
 import {
@@ -18,21 +19,32 @@ import {
   DeleteOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { useEffect, useState, createContext } from "react";
+
 const { Meta } = Card;
 
-function App() {
+const App = () => {
   const [flowers, setFlowers] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  // const [form] = Form.useForm();
-  // const [close, setClose] = useState(false);
-  const ReachableContext = createContext(null);
-  const UnreachableContext = createContext(null);
+  const [viewFlower, setViewFlower] = useState(null);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await fetch(
+        "http://localhost:8080/api/flower/category/house-plants?access_token=64bebc1e2c6d3f056a8c85b7"
+      );
+      const data = await response.json();
+      setTimeout(() => {
+        setFlowers(data.data);
+        setLoading(false);
+      }, 1000);
+    };
+    fetchData();
+  }, []);
 
   const onFinish = async (values) => {
-    console.log(values);
-
     const shouldUpload = {
       title: values.title,
       price: values.price,
@@ -40,10 +52,10 @@ function App() {
       discount: values.discount,
       discount_price: values.discount_price,
       detailed_images: [
-        "https://www.coartsinnovation.com/wp-content/uploads/2021/05/Artificial-Topiary-CAJM-7136.png",
-        "https://www.coartsinnovation.com/wp-content/uploads/2021/05/Artificial-Topiary-CAJM-7136.png",
-        "https://cdn11.bigcommerce.com/s-2mpfm/images/stencil/640w/products/169512/743847/5965__41958.1630728740.jpg?c=2",
-        "https://cdn11.bigcommerce.com/s-2mpfm/images/stencil/640w/products/169089/743279/5493__27309.1630683935.jpg?c=2",
+        values.detaled_image_1.file.response.image_url.url,
+        values.detaled_image_2.file.response.image_url.url,
+        values.detaled_image_3.file.response.image_url.url,
+        values.detaled_image_4.file.response.image_url.url,
       ],
       rate: 0,
       views: 0,
@@ -70,7 +82,7 @@ function App() {
 
   const deleteImage = async (imageId) => {
     await fetch(
-      `http://localhost:8080/api/flower/category?access_token=64bebc1e2c6d3f056a8c85b7`,
+      `http://localhost:8080/api/flower/category/${imageId}?access_token=64bebc1e2c6d3f056a8c85b7`,
       {
         method: "DELETE",
         headers: {
@@ -82,85 +94,13 @@ function App() {
     setFlowers(flowers.filter((flower) => flower._id !== imageId));
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const response = await fetch(
-        "http://localhost:8080/api/flower/category/house-plants?access_token=64bebc1e2c6d3f056a8c85b7"
-      );
-
-      const data = await response.json();
-
-      setTimeout(() => {
-        // Simulate delay for skeleton loaders
-        setFlowers(data.data);
-        setLoading(false); // Set loading state to false once data is fetched
-      }, 1000); // Adjust the delay as needed
-    };
-
-    fetchData();
-  }, []);
-
   const onSwitch = (checked) => {
     console.log(`switch to ${checked}`);
   };
-  const [modal, contextHolder] = Modal.useModal();
 
-  const config = {
-    title: "INFO FLOWERS",
-    content: (
-      <>
-        {/* <ReachableContext.Consumer>
-          {(name) => `Reachable: ${name}!`}
-        </ReachableContext.Consumer>
-        <br />
-        <UnreachableContext.Consumer>
-          {(name) => `Unreachable: ${name}!`}
-        </UnreachableContext.Consumer> */}
-        {flowers.map(
-          ({
-            _id,
-            title,
-            price,
-            discount,
-            discount_price,
-            short_description,
-            description,
-            rate,
-            views,
-            tags,
-            comments,
-            created_by,
-            created_at,
-            __v,
-          }) => (
-            <Card
-              key={_id}
-              hoverable
-              style={{
-                width: 300,
-              }}
-            >
-              <Meta
-                id={_id}
-                title={title}
-                price={price}
-                discount={discount}
-                discount_price={discount_price}
-                shortDescription={short_description}
-                description={description}
-                rate={rate}
-                views={views}
-                tags={tags}
-                comments={comments}
-                created_by={created_by}
-                created_at={created_at}
-                __v={__v}
-              />
-            </Card>
-          )
-        )}
-      </>
-    ),
+  const showFlowerDetails = (flower) => {
+    setViewFlower(flower);
+    setViewModalVisible(true);
   };
 
   return (
@@ -188,7 +128,7 @@ function App() {
           </Form.Item>
 
           <Form.Item
-            label="Main-Image"
+            label="Main Image"
             name="main_image"
             rules={[
               {
@@ -204,9 +144,10 @@ function App() {
               <Button>Upload</Button>
             </Upload>
           </Form.Item>
+
           <Form.Item
-            label="1-Detailed image"
-            name="main_image"
+            label="1-Detailed Image"
+            name="detaled_image_1"
             rules={[
               {
                 required: true,
@@ -221,9 +162,10 @@ function App() {
               <Button>Upload</Button>
             </Upload>
           </Form.Item>
+
           <Form.Item
-            label="2-Detailed image"
-            name="main_image"
+            label="2-Detailed Image"
+            name="detaled_image_2"
             rules={[
               {
                 required: true,
@@ -238,9 +180,10 @@ function App() {
               <Button>Upload</Button>
             </Upload>
           </Form.Item>
+
           <Form.Item
-            label="3-Detailed image"
-            name="main_image"
+            label="3-Detailed Image"
+            name="detaled_image_3"
             rules={[
               {
                 required: true,
@@ -255,9 +198,10 @@ function App() {
               <Button>Upload</Button>
             </Upload>
           </Form.Item>
+
           <Form.Item
-            label="4-Detailed image"
-            name="main_image"
+            label="4-Detailed Image"
+            name="detaled_image_4"
             rules={[
               {
                 required: true,
@@ -292,7 +236,7 @@ function App() {
             rules={[
               {
                 required: true,
-                message: "Please input your price!",
+                message: "Please input your discount!",
               },
             ]}
           >
@@ -300,7 +244,7 @@ function App() {
           </Form.Item>
 
           <Form.Item
-            label="Discount_price"
+            label="Discount Price"
             name="discount_price"
             rules={[
               {
@@ -313,12 +257,12 @@ function App() {
           </Form.Item>
 
           <Form.Item
-            label="Short description"
+            label="Short Description"
             name="shortDescription"
             rules={[
               {
                 required: true,
-                message: "Please input your title!",
+                message: "Please input your short description!",
               },
             ]}
           >
@@ -331,7 +275,7 @@ function App() {
             rules={[
               {
                 required: true,
-                message: "Please input your title!",
+                message: "Please input your description!",
               },
             ]}
           >
@@ -359,6 +303,40 @@ function App() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <Modal
+        visible={viewModalVisible}
+        title="Flower Details"
+        onCancel={() => setViewModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setViewModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+      >
+        {viewFlower && (
+          <>
+            <h3>Title: {viewFlower.title}</h3>
+            <p>Description: {viewFlower.description}</p>
+            <p>Price: {viewFlower.price}</p>
+            <p>Discount: {viewFlower.discount ? "Yes" : "No"}</p>
+            <p>Discount Price: {viewFlower.discount_price}</p>
+            <p>Short Description: {viewFlower.short_description}</p>
+            <Carousel>
+              {viewFlower.detailed_images.map((img, index) => (
+                <div key={index}>
+                  <img
+                    src={img}
+                    alt={`detail ${index}`}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              ))}
+            </Carousel>
+          </>
+        )}
+      </Modal>
+
       <div className="absolute top-2 right-10">
         <Button
           onClick={() => {
@@ -368,58 +346,31 @@ function App() {
           Add
         </Button>
       </div>
-      <div>
-        <ReachableContext.Provider value="odusuf">
-          <Space></Space>
-          {/* `contextHolder` should always be placed under the context you want to access */}
-          {contextHolder}
 
-          {/* Can not access this context since `contextHolder` is not in it */}
-          <UnreachableContext.Provider value="Bamboo" />
-        </ReachableContext.Provider>
-      </div>
       <div className="box">
         {loading ? (
-          <>
-            <div className="flex flex-col w-[490px] h-[800px] m-auto gap-[30px] ml-[450px]">
-              <Spin
-                size="large"
-                style={{
-                  margin: "auto",
-                }}
-              />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-              <Skeleton active paragraph={{ rows: 1 }} />
-            </div>
-          </>
+          <div className="flex flex-col w-[490px] h-[800px] m-auto gap-[30px] ml-[450px]">
+            <Spin
+              size="large"
+              style={{
+                margin: "auto",
+              }}
+            />
+            {[...Array(10)].map((_, index) => (
+              <Skeleton key={index} active paragraph={{ rows: 1 }} />
+            ))}
+          </div>
         ) : (
-          // Render actual flower cards once data is loaded
-
           flowers.map(
             ({
-              main_image,
               _id,
               title,
+              short_description,
+              detailed_images,
+              description,
               price,
               discount,
               discount_price,
-              short_description,
-              description,
-              rate,
-              views,
-              tags,
-              comments,
-              created_by,
-              created_at,
-              __v,
             }) => (
               <Card
                 key={_id}
@@ -427,14 +378,32 @@ function App() {
                 style={{
                   width: 300,
                 }}
-                cover={<img alt="example" src={main_image} />}
+                onMouseEnter={() => setHoveredCard(_id)}
+                onMouseLeave={() => setHoveredCard(null)}
+                cover={
+                  <Carousel autoplay={hoveredCard === _id}>
+                    {detailed_images.map((img, index) => (
+                      <div key={index}>
+                        <img alt={`flower-${index}`} src={img} />
+                      </div>
+                    ))}
+                  </Carousel>
+                }
                 actions={[
                   <SettingOutlined
                     key="setting"
-                    onClick={async () => {
-                      const confirmed = await modal.confirm(config);
-                      console.log("Confirmed: ", confirmed);
-                    }}
+                    onClick={() =>
+                      showFlowerDetails({
+                        _id,
+                        title,
+                        short_description,
+                        description,
+                        price,
+                        discount,
+                        discount_price,
+                        detailed_images,
+                      })
+                    }
                   />,
                   <EditOutlined key="edit" />,
                   <DeleteOutlined
@@ -443,22 +412,7 @@ function App() {
                   />,
                 ]}
               >
-                <Meta
-                  id={_id}
-                  title={title}
-                  price={price}
-                  discount={discount}
-                  discount_price={discount_price}
-                  shortDescription={short_description}
-                  description={description}
-                  rate={rate}
-                  views={views}
-                  tags={tags}
-                  comments={comments}
-                  created_by={created_by}
-                  created_at={created_at}
-                  __v={__v}
-                />
+                <Meta title={title} description={short_description} />
               </Card>
             )
           )
@@ -466,6 +420,6 @@ function App() {
       </div>
     </div>
   );
-}
+};
 
 export default App;

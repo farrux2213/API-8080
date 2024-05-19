@@ -18,3 +18,11 @@
   top: 2;
   right: 2;
 }
+
+.slick-dots li button {
+  background-color: #46a358 !important;
+  opacity: 30%;
+}
+.slick-active button {
+  background-color: #46a358 !important;
+}
