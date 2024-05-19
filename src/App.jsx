@@ -15,7 +15,7 @@ import {
 import TextArea from "antd/lib/input/TextArea";
 import {
   EditOutlined,
-  EllipsisOutlined,
+  DeleteOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState, createContext } from "react";
@@ -25,6 +25,7 @@ function App() {
   const [flowers, setFlowers] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  // const [form] = Form.useForm();
   // const [close, setClose] = useState(false);
   const ReachableContext = createContext(null);
   const UnreachableContext = createContext(null);
@@ -63,8 +64,22 @@ function App() {
         body: JSON.stringify(shouldUpload),
       }
     );
-
+    setFlowers([...flowers, shouldUpload]);
     setOpen(false);
+  };
+
+  const deleteImage = async (imageId) => {
+    await fetch(
+      `http://localhost:8080/api/flower/category?access_token=64bebc1e2c6d3f056a8c85b7`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: "Bearer YOUR_ACCESS_TOKEN",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    setFlowers(flowers.filter((flower) => flower._id !== imageId));
   };
 
   useEffect(() => {
@@ -173,7 +188,75 @@ function App() {
           </Form.Item>
 
           <Form.Item
-            label="Upload"
+            label="Main-Image"
+            name="main_image"
+            rules={[
+              {
+                required: true,
+                message: "Please upload your image!",
+              },
+            ]}
+          >
+            <Upload
+              name="image"
+              action="http://localhost:8080/api/upload?access_token=64bebc1e2c6d3f056a8c85b7"
+            >
+              <Button>Upload</Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            label="1-Detailed image"
+            name="main_image"
+            rules={[
+              {
+                required: true,
+                message: "Please upload your image!",
+              },
+            ]}
+          >
+            <Upload
+              name="image"
+              action="http://localhost:8080/api/upload?access_token=64bebc1e2c6d3f056a8c85b7"
+            >
+              <Button>Upload</Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            label="2-Detailed image"
+            name="main_image"
+            rules={[
+              {
+                required: true,
+                message: "Please upload your image!",
+              },
+            ]}
+          >
+            <Upload
+              name="image"
+              action="http://localhost:8080/api/upload?access_token=64bebc1e2c6d3f056a8c85b7"
+            >
+              <Button>Upload</Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            label="3-Detailed image"
+            name="main_image"
+            rules={[
+              {
+                required: true,
+                message: "Please upload your image!",
+              },
+            ]}
+          >
+            <Upload
+              name="image"
+              action="http://localhost:8080/api/upload?access_token=64bebc1e2c6d3f056a8c85b7"
+            >
+              <Button>Upload</Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            label="4-Detailed image"
             name="main_image"
             rules={[
               {
@@ -320,29 +403,65 @@ function App() {
         ) : (
           // Render actual flower cards once data is loaded
 
-          flowers.map(({ _id, main_image, title, short_description }) => (
-            <Card
-              key={_id}
-              hoverable
-              style={{
-                width: 300,
-              }}
-              cover={<img alt="example" src={main_image} />}
-              actions={[
-                <SettingOutlined
-                  key="setting"
-                  onClick={async () => {
-                    const confirmed = await modal.confirm(config);
-                    console.log("Confirmed: ", confirmed);
-                  }}
-                />,
-                <EditOutlined key="edit" />,
-                <EllipsisOutlined key="ellipsis" />,
-              ]}
-            >
-              <Meta title={title} description={short_description} />
-            </Card>
-          ))
+          flowers.map(
+            ({
+              main_image,
+              _id,
+              title,
+              price,
+              discount,
+              discount_price,
+              short_description,
+              description,
+              rate,
+              views,
+              tags,
+              comments,
+              created_by,
+              created_at,
+              __v,
+            }) => (
+              <Card
+                key={_id}
+                hoverable
+                style={{
+                  width: 300,
+                }}
+                cover={<img alt="example" src={main_image} />}
+                actions={[
+                  <SettingOutlined
+                    key="setting"
+                    onClick={async () => {
+                      const confirmed = await modal.confirm(config);
+                      console.log("Confirmed: ", confirmed);
+                    }}
+                  />,
+                  <EditOutlined key="edit" />,
+                  <DeleteOutlined
+                    key="delete"
+                    onClick={() => deleteImage(_id)}
+                  />,
+                ]}
+              >
+                <Meta
+                  id={_id}
+                  title={title}
+                  price={price}
+                  discount={discount}
+                  discount_price={discount_price}
+                  shortDescription={short_description}
+                  description={description}
+                  rate={rate}
+                  views={views}
+                  tags={tags}
+                  comments={comments}
+                  created_by={created_by}
+                  created_at={created_at}
+                  __v={__v}
+                />
+              </Card>
+            )
+          )
         )}
       </div>
     </div>
